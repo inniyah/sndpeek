@@ -29,6 +29,9 @@
 #include <stdlib.h>
 #include <string.h> // for memset
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //**********************
 //       Utils
@@ -444,5 +447,8 @@ double dywapitch_computepitch(dywapitchtracker *pitchtracker, double * samples, 
 	return _dywapitch_dynamicprocess(pitchtracker, raw_pitch);
 }
 
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 

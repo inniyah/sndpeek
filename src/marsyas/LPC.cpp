@@ -27,6 +27,7 @@ in Speech Recognition research.
 
 
 #include "LPC.h"
+#include <cmath>
 
 LPC::LPC( unsigned int inSize )
 {
