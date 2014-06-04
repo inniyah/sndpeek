@@ -42,6 +42,8 @@
 #include "RtAudio.h"
 #include <iostream>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 
 // Static variable definitions.
 const unsigned int RtApi::MAX_SAMPLE_RATES = 14;
