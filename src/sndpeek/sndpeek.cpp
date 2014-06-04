@@ -92,7 +92,8 @@
 #include "RMS.h"
 #include "Rolloff.h"
 
-
+// Dynamic Wavelet Algorithm Pitch Tracking library
+#include "dywapitchtrack.h"
 
 
 //-----------------------------------------------------------------------------
@@ -159,6 +160,9 @@ GLint g_fft_size = SND_FFT_SIZE;
 RtAudio * g_audio = NULL;
 GLboolean g_ready = FALSE;
 Mutex g_mutex;
+
+// Dynamic Wavelet Algorithm Pitch Tracking library
+dywapitchtracker g_pitch_track;
 
 // file reading
 SNDFILE * g_sf = NULL;
@@ -708,7 +712,23 @@ int cb( char * buffer, int buffer_size, void * user_data )
                 memset( buffer, 0, 2 * buffer_size * sizeof(SAMPLE) );
         }
     }
-    
+
+
+    // Dynamic Wavelet Algorithm Pitch Tracking library
+    double pitch = g_pitch_track.computepitch(g_audio_buffer, 0, SND_BUFFER_SIZE);
+    unsigned int note = g_pitch_track.getMidiNoteFromFreq(pitch);
+    double proper_pitch = g_pitch_track.getFreqFromMidiNote(note);
+    int confidence = g_pitch_track.getPitchConfidence();
+    if (confidence > 1 && note) {
+        printf("Pitch = %f Hz, Ref = %f Hz, Note = %d (%s), Conf = %d\n",
+            (float)pitch,
+            (float)proper_pitch,
+            note,
+            g_pitch_track.getMidiNoteName(note), 
+            confidence
+        );
+    }
+
     // set flag
     g_ready = TRUE;
     // unlock

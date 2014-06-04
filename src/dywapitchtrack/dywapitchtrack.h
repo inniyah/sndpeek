@@ -74,37 +74,54 @@
  
 */
 
-#ifndef dywapitchtrack__H
-#define dywapitchtrack__H
+#ifndef DYWAPITCHTRACK_H_1A1BA0C2_EB8C_11E3_AC6E_10FEED04CD1C
+#define DYWAPITCHTRACK_H_1A1BA0C2_EB8C_11E3_AC6E_10FEED04CD1C
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+class dywapitchtracker {
+	public:
+		typedef float Sample;
 
-// structure to hold tracking data
-typedef struct _dywapitchtracker {
-	double	_prevPitch;
-	int		_pitchConfidence;
-} dywapitchtracker;
+		dywapitchtracker() : _prevPitch(-1.0), _pitchConfidence(-1) {
+		}
 
-// returns the number of samples needed to compute pitch for fequencies equal and above the given minFreq (in Hz)
-// useful to allocate large enough audio buffer 
-// ex : for frequencies above 130Hz, you need 1024 samples (assuming a 44100 Hz samplerate)
-int dywapitch_neededsamplecount(int minFreq);
+		void init() {
+			_prevPitch = -1.;
+			_pitchConfidence = -1;
+		}
 
-// call before computing any pitch, passing an allocated dywapitchtracker structure
-void dywapitch_inittracking(dywapitchtracker *pitchtracker);
+	// returns the number of samples needed to compute pitch for fequencies equal and above the given minFreq (in Hz)
+	// useful to allocate large enough audio buffer 
+	// ex : for frequencies above 130Hz, you need 1024 samples (assuming a 44100 Hz samplerate)
+	static int neededSampleCount(int minFreq);
 
-// computes the pitch. Pass the inited dywapitchtracker structure
-// samples : a pointer to the sample buffer
-// startsample : the index of teh first sample to use in teh sample buffer
-// samplecount : the number of samples to use to compte the pitch
-// return 0.0 if no pitch was found (sound too low, noise, etc..)
-double dywapitch_computepitch(dywapitchtracker *pitchtracker, double * samples, int startsample, int samplecount);
+	static unsigned int getMidiNoteFromFreq(double freq, const double ref_freq = 440.0) ;
 
-#ifdef __cplusplus
-} // extern "C"
-#endif
+	static double getFreqFromMidiNote(unsigned int midi_note, const double ref_freq = 440.0);
 
-#endif
+	static const char * getMidiNoteName(unsigned int midi_note) ;
 
+	// computes the pitch. Pass the inited dywapitchtracker structure
+	// samples : a pointer to the sample buffer
+	// startsample : the index of teh first sample to use in teh sample buffer
+	// samplecount : the number of samples to use to compte the pitch
+	// return 0.0 if no pitch was found (sound too low, noise, etc..)
+	double computepitch(const Sample * samples, int startsample, int samplecount);
+
+		double getPrevPitch() const {
+			return _prevPitch;
+		};
+
+		int getPitchConfidence() const {
+			return _pitchConfidence;
+		};
+
+	protected:
+		static double computeWaveletPitch(const Sample * samples, int startsample, int samplecount);
+		double dynamicProcess(double pitch);
+
+	private:
+		double _prevPitch;
+		int _pitchConfidence;
+};
+
+#endif // DYWAPITCHTRACK_H_1A1BA0C2_EB8C_11E3_AC6E_10FEED04CD1C

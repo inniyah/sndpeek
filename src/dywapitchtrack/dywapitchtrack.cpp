@@ -25,13 +25,9 @@
 */
 
 #include "dywapitchtrack.h"
-#include <math.h>
-#include <stdlib.h>
-#include <string.h> // for memset
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <cmath>
+#include <cstdlib>
+#include <cstring>
 
 //**********************
 //       Utils
@@ -45,7 +41,7 @@ extern "C" {
 #endif
 
 // returns 1 if power of 2
-int _power2p(int value) {
+static inline int _power2p(int value) {
 	if (value == 0) return 1;
 	if (value == 2) return 1;
 	if (value & 0x1) return 0;
@@ -53,7 +49,7 @@ int _power2p(int value) {
 }
 
 // count number of bits
-int _bitcount(int value) {
+static inline int _bitcount(int value) {
 	if (value == 0) return 0;
 	if (value == 1) return 1;
 	if (value == 2) return 2;
@@ -61,7 +57,7 @@ int _bitcount(int value) {
 }
 
 // closest power of 2 above or equal
-int _ceil_power2(int value) {
+static inline int _ceil_power2(int value) {
 	if (_power2p(value)) return value;
 	
 	if (value == 1) return 2;
@@ -72,19 +68,19 @@ int _ceil_power2(int value) {
 }
 
 // closest power of 2 below or equal
-int _floor_power2(int value) {
+static inline int _floor_power2(int value) {
 	if (_power2p(value)) return value;
 	return _ceil_power2(value)/2;
 }
 
 // abs value
-int _iabs(int x) {
+static inline int _iabs(int x) {
 	if (x >= 0) return x;
 	return -x;
 }
 
 // 2 power
-int _2power(int i) {
+static inline int _2power(int i) {
 	int res = 1, j;
 	for (j = 0; j < i; j++) res <<= 1;
 	return res;
@@ -94,28 +90,39 @@ int _2power(int i) {
 // the Wavelet algorithm itself
 //******************************
 
-int dywapitch_neededsamplecount(int minFreq) {
+int dywapitchtracker::neededSampleCount(int minFreq) {
 	int nbSam = 3*44100/minFreq; // 1017. for 130 Hz
 	nbSam = _ceil_power2(nbSam); // 1024
 	return nbSam;
 }
 
-typedef struct _minmax {
-	int index;
-	struct _minmax *next;
-} minmax;
+unsigned int dywapitchtracker::getMidiNoteFromFreq(double freq, const double ref_freq) {
+		unsigned int midi_note = (12*(log10(freq/ref_freq)/log10(2)) + 57) + 0.5;
+		//unsigned int midi_note = (12*(log10(freq/ref_freq)/log10(2)) + 69) + 0.5;
+		return midi_note;
+}
 
-double _dywapitch_computeWaveletPitch(double * samples, int startsample, int samplecount) {
+double dywapitchtracker::getFreqFromMidiNote(unsigned int midi_note, const double ref_freq) {
+	return (ref_freq / 16.0) * pow(2.0, (double)(midi_note - 9) / 12.0);
+	//return (ref_freq / 32.0) * pow(2.0, (double)(midi_note - 9) / 12.0);
+}
+
+const char * dywapitchtracker::getMidiNoteName(unsigned int midi_note) {
+		const char * note_strings[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+		return note_strings[midi_note % 12];
+}
+
+double dywapitchtracker::computeWaveletPitch(const Sample * samples, int startsample, int samplecount) {
 	double pitchF = 0.0;
 	
 	int i, j;
-	double si, si1;
+	Sample si, si1;
 	
 	// must be a power of 2
 	samplecount = _floor_power2(samplecount);
 	
-	double *sam = (double *)malloc(sizeof(double)*samplecount);
-	memcpy(sam, samples + startsample, sizeof(double)*samplecount);
+	Sample *sam = (Sample *)malloc(sizeof(Sample)*samplecount);
+	memcpy(sam, samples + startsample, sizeof(Sample)*samplecount);
 	int curSamNb = samplecount;
 	
 	int *distances = (int *)malloc(sizeof(int)*samplecount);
@@ -134,8 +141,8 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 	
 	{ // compute ampltitudeThreshold and theDC
 		//first compute the DC and maxAMplitude
-		double maxValue = 0.0;
-		double minValue = 0.0;
+		Sample maxValue = 0.0;
+		Sample minValue = 0.0;
 		for (i = 0; i < samplecount;i++) {
 			si = sam[i];
 			theDC = theDC + si;
@@ -157,7 +164,7 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 	double curModeDistance = -1.;
 	int delta;
 	
-	while(1) {
+	while (true) {
 		
 		// delta
 		delta = 44100./(_2power(curLevel)*maxF);
@@ -353,8 +360,7 @@ It states:
  of a voiced segment. Smooth the plot. 
 ***/
 
-double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
-	
+double dywapitchtracker::dynamicProcess(double pitch) {
 	// equivalence
 	if (pitch == 0.0) pitch = -1.0;
 	
@@ -366,60 +372,60 @@ double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
 	if (pitch != -1) {
 		// I have a pitch here
 		
-		if (pitchtracker->_prevPitch == -1) {
+		if (_prevPitch == -1) {
 			// no previous
 			estimatedPitch = pitch;
-			pitchtracker->_prevPitch = pitch;
-			pitchtracker->_pitchConfidence = 1;
+			_prevPitch = pitch;
+			_pitchConfidence = 1;
 			
-		} else if (abs(pitchtracker->_prevPitch - pitch)/pitch < acceptedError) {
+		} else if (abs(_prevPitch - pitch)/pitch < acceptedError) {
 			// similar : remember and increment pitch
-			pitchtracker->_prevPitch = pitch;
+			_prevPitch = pitch;
 			estimatedPitch = pitch;
-			pitchtracker->_pitchConfidence = min(maxConfidence, pitchtracker->_pitchConfidence + 1); // maximum 3
+			_pitchConfidence = min(maxConfidence, _pitchConfidence + 1); // maximum 3
 			
-		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && abs(pitchtracker->_prevPitch - 2.*pitch)/(2.*pitch) < acceptedError) {
+		} else if ((_pitchConfidence >= maxConfidence-2) && abs(_prevPitch - 2.*pitch)/(2.*pitch) < acceptedError) {
 			// close to half the last pitch, which is trusted
 			estimatedPitch = 2.*pitch;
-			pitchtracker->_prevPitch = estimatedPitch;
+			_prevPitch = estimatedPitch;
 			
-		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && abs(pitchtracker->_prevPitch - 0.5*pitch)/(0.5*pitch) < acceptedError) {
+		} else if ((_pitchConfidence >= maxConfidence-2) && abs(_prevPitch - 0.5*pitch)/(0.5*pitch) < acceptedError) {
 			// close to twice the last pitch, which is trusted
 			estimatedPitch = 0.5*pitch;
-			pitchtracker->_prevPitch = estimatedPitch;
+			_prevPitch = estimatedPitch;
 			
 		} else {
 			// nothing like this : very different value
-			if (pitchtracker->_pitchConfidence >= 1) {
+			if (_pitchConfidence >= 1) {
 				// previous trusted : keep previous
-				estimatedPitch = pitchtracker->_prevPitch;
-				pitchtracker->_pitchConfidence = max(0, pitchtracker->_pitchConfidence - 1);
+				estimatedPitch = _prevPitch;
+				_pitchConfidence = max(0, _pitchConfidence - 1);
 			} else {
 				// previous not trusted : take current
 				estimatedPitch = pitch;
-				pitchtracker->_prevPitch = pitch;
-				pitchtracker->_pitchConfidence = 1;
+				_prevPitch = pitch;
+				_pitchConfidence = 1;
 			}
 		}
 		
 	} else {
 		// no pitch now
-		if (pitchtracker->_prevPitch != -1) {
+		if (_prevPitch != -1) {
 			// was pitch before
-			if (pitchtracker->_pitchConfidence >= 1) {
+			if (_pitchConfidence >= 1) {
 				// continue previous
-				estimatedPitch = pitchtracker->_prevPitch;
-				pitchtracker->_pitchConfidence = max(0, pitchtracker->_pitchConfidence - 1);
+				estimatedPitch = _prevPitch;
+				_pitchConfidence = max(0, _pitchConfidence - 1);
 			} else {
-				pitchtracker->_prevPitch = -1;
+				_prevPitch = -1;
 				estimatedPitch = -1.;
-				pitchtracker->_pitchConfidence = 0;
+				_pitchConfidence = 0;
 			}
 		}
 	}
 	
-	// put "_pitchConfidence="&pitchtracker->_pitchConfidence
-	if (pitchtracker->_pitchConfidence >= 1) {
+	// put "_pitchConfidence="&_pitchConfidence
+	if (_pitchConfidence >= 1) {
 		// ok
 		pitch = estimatedPitch;
 	} else {
@@ -437,18 +443,7 @@ double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
 // the API main entry points
 // ************************************
 
-void dywapitch_inittracking(dywapitchtracker *pitchtracker) {
-	pitchtracker->_prevPitch = -1.;
-	pitchtracker->_pitchConfidence = -1;
+double dywapitchtracker::computepitch(const Sample * samples, int startsample, int samplecount) {
+	double raw_pitch = computeWaveletPitch(samples, startsample, samplecount);
+	return dynamicProcess(raw_pitch);
 }
-
-double dywapitch_computepitch(dywapitchtracker *pitchtracker, double * samples, int startsample, int samplecount) {
-	double raw_pitch = _dywapitch_computeWaveletPitch(samples, startsample, samplecount);
-	return _dywapitch_dynamicprocess(pitchtracker, raw_pitch);
-}
-
-#ifdef __cplusplus
-} // extern "C"
-#endif
-
-
