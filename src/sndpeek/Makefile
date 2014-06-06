@@ -1,16 +1,15 @@
 CC=gcc
 CPP=g++
-INCLUDES=-I../marsyas/
+INCLUDES=-I../marsyas/ -I../dywapitchtrack/
 MARSYAS_DIR=../marsyas/
-CFLAGS=-D__MACOSX_CORE__ $(INCLUDES) -O3 -c
-LIBS=-framework CoreAudio -framework CoreMIDI -framework CoreFoundation\
-	-framework OpenGL -framework GLUT -framework Foundation \
-	-framework AppKit
+DYWAPITCHTRACK_DIR=../dywapitchtrack/
+CFLAGS=-D__LINUX_ALSA__ -D__LITTLE_ENDIAN__ $(INCLUDES) -O3 -c
+LIBS=-L/usr/X11R6/lib -lglut -lGL -lGLU -lasound -lXmu -lX11 -lXext -lXi -lrtaudio -lm -lsndfile -lpthread
 
-OBJS=chuck_fft.o RtAudio.o Thread.o sndpeek.o Stk.o util_sndfile.o \
+OBJS=chuck_fft.o Thread.o sndpeek.o Stk.o \
 	Centroid.o DownSampler.o Flux.o LPC.o MFCC.o RMS.o Rolloff.o \
 	System.o fvec.o AutoCorrelation.o Communicator.o Hamming.o \
-	MagFFT.o NormRMS.o MarSignal.o fmatrix.o
+	MagFFT.o NormRMS.o MarSignal.o fmatrix.o dywapitchtrack.o
 
 sndpeek: $(OBJS)
 	$(CPP) -o $@ $(OBJS) $(LIBS)
@@ -62,6 +61,9 @@ MarSignal.o:
 
 fmatrix.o:
 	$(CC) $(CFLAGS) $(MARSYAS_DIR)$*.cpp
+
+dywapitchtrack.o:
+	$(CC) $(CFLAGS) $(DYWAPITCHTRACK_DIR)$*.cpp
 
 .o: $*.h
 

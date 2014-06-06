@@ -55,7 +55,7 @@
 #endif
 
 // STK
-#include "RtAudio.h"
+#include <RtAudio.h>
 #include "Thread.h"
 
 // OpenGL
@@ -603,8 +603,12 @@ int main( int argc, char ** argv )
 // name: cb()
 // desc: audio callback
 //-----------------------------------------------------------------------------
-int cb( char * buffer, int buffer_size, void * user_data )
+int cb( void * output_buffer, void * input_buffer, unsigned int n_frames,
+                                double stream_time, RtAudioStreamStatus status, void * user_data )
 {
+    char * buffer = (char *)input_buffer;
+    unsigned int buffer_size = n_frames;
+
     // freeze frame
     if( g_freeze ) {
         memset( buffer, 0, buffer_size * 2 * sizeof(SAMPLE) );
@@ -786,10 +790,30 @@ bool initialize_audio( )
         try
         {
             // buffer size
-            int bufsize = g_buffer_size;
+            unsigned int bufsize = g_buffer_size;
             // open the audio device for capture and playback
-            g_audio = new RtAudio( 0, g_sndout, 0, g_sndin, RTAUDIO_FLOAT32,
-                g_srate, &bufsize, 8 );
+            g_audio = new RtAudio(RtAudio::LINUX_ALSA);
+
+            unsigned int num_devices = g_audio->getDeviceCount();
+            printf("%d devices detected:\n", num_devices);
+                for (unsigned int device = 0; device < num_devices; ++device) {
+                RtAudio::DeviceInfo dev_info= g_audio->getDeviceInfo(device);
+                printf("Device %d: %s\n", device, dev_info.name.c_str());
+            }
+
+            RtAudio::StreamParameters output_parameters;
+            output_parameters.deviceId = g_audio->getDefaultInputDevice();
+            output_parameters.nChannels = g_sndout;
+            output_parameters.firstChannel = 0;
+
+            RtAudio::StreamParameters input_parameters;
+            input_parameters.deviceId = 3;//g_audio->getDefaultOutputDevice();
+            input_parameters.nChannels = g_sndin;
+            input_parameters.firstChannel = 0;
+
+            g_audio->openStream(g_sndout ? &output_parameters : NULL, g_sndin ? &input_parameters : NULL,
+                RTAUDIO_FLOAT32, g_srate, &bufsize, &cb, NULL );
+
             // test
             if( bufsize != g_buffer_size )
             {
@@ -806,9 +830,6 @@ bool initialize_audio( )
             return false;
         }
 
-        // set the audio callback
-        g_audio->setStreamCallback( cb, NULL );
-    
         // start the audio
         g_audio->startStream( );
     }
