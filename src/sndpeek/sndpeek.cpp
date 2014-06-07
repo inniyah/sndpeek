@@ -48,11 +48,7 @@
 #include <memory.h>
 
 // libsndfile
-#if defined(__USE_SNDFILE_NATIVE__)
 #include <sndfile.h>
-#else
-#include "util_sndfile.h"
-#endif
 
 // STK
 #include <RtAudio.h>
