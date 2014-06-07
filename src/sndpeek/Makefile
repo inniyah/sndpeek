@@ -3,7 +3,7 @@ CPP=g++
 INCLUDES=-I../marsyas/ -I../dywapitchtrack/
 MARSYAS_DIR=../marsyas/
 DYWAPITCHTRACK_DIR=../dywapitchtrack/
-CFLAGS=-D__LINUX__ -D__LITTLE_ENDIAN__ $(INCLUDES) -O3 -c
+CFLAGS=-D__OS_LINUX__ -D__LITTLE_ENDIAN__ $(INCLUDES) -O3 -c
 LIBS=-L/usr/X11R6/lib -lglut -lGL -lGLU -lasound -lXmu -lX11 -lXext -lXi -lrtaudio -lm -lsndfile -lpthread
 
 OBJS=chuck_fft.o Thread.o sndpeek.o Stk.o \

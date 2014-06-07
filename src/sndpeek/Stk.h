@@ -177,20 +177,7 @@ typedef double FLOAT64;
 
 #define ONE_OVER_128 (MY_FLOAT) 0.0078125
 
-#if defined(__WINDOWS_DS__) || defined(__WINDOWS_ASIO__)
-  #define __OS_WINDOWS__
-  #define __STK_REALTIME__
-#elif defined(__LINUX___)
-  #define __OS_LINUX__
-  #define __STK_REALTIME__
-#elif defined(__IRIX_AL__)
-  #define __OS_IRIX__
-  #define __STK_REALTIME__
-#elif defined(__MACOSX_CORE__)
-  #define __OS_MACOSX__
-  #define __STK_REALTIME__
-#endif
-
+#define __STK_REALTIME__
 //#define _STK_DEBUG_
 
 #endif
