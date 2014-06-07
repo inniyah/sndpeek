@@ -165,7 +165,7 @@ SNDFILE * g_sf = NULL;
 SF_INFO g_sf_info;
 
 // default sample rate
-#if defined(__LINUX_ALSA__) || defined(__LINUX_OSS__) || defined(__LINUX_JACK__)
+#if defined(__linux) 
   GLuint g_srate = 48000;
 #else
   GLuint g_srate = 44100;

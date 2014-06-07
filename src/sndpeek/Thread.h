@@ -16,16 +16,7 @@
 
 #include "Stk.h"
 
-#if (defined(__OS_IRIX__) || defined(__OS_LINUX__) || defined(__OS_MACOSX__)) || defined(__WINDOWS_PTHREAD__)
-
-  #include <pthread.h>
-  #define THREAD_TYPE
-  typedef pthread_t THREAD_HANDLE;
-  typedef void * THREAD_RETURN;
-  typedef void * (*THREAD_FUNCTION)(void *);
-  typedef pthread_mutex_t MUTEX;
-
-#elif defined(__OS_WINDOWS__)
+#if (defined(_WIN32)|| defined(_WIN64)) && !defined(__WINDOWS_PTHREAD__)
 
   #include <windows.h>
   #include <process.h>
@@ -34,6 +25,17 @@
   typedef unsigned THREAD_RETURN;
   typedef unsigned (__stdcall *THREAD_FUNCTION)(void *);
   typedef CRITICAL_SECTION MUTEX;
+  #undef USING_PTHREADS
+
+#else
+
+  #include <pthread.h>
+  #define THREAD_TYPE
+  typedef pthread_t THREAD_HANDLE;
+  typedef void * THREAD_RETURN;
+  typedef void * (*THREAD_FUNCTION)(void *);
+  typedef pthread_mutex_t MUTEX;
+  #define USING_PTHREADS
 
 #endif
 
