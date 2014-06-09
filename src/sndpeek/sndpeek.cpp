@@ -715,7 +715,7 @@ int cb( void * output_buffer, void * input_buffer, unsigned int n_frames,
 
 
     // Dynamic Wavelet Algorithm Pitch Tracking library
-    double pitch = g_pitch_track.computepitch(g_audio_buffer, 0, SND_BUFFER_SIZE);
+    double pitch = g_pitch_track.computePitch(g_audio_buffer, 0, SND_BUFFER_SIZE, g_srate);
     unsigned int note = g_pitch_track.getMidiNoteFromFreq(pitch);
     double proper_pitch = g_pitch_track.getFreqFromMidiNote(note);
     int confidence = g_pitch_track.getPitchConfidence();

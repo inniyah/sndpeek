@@ -91,7 +91,7 @@ static inline int _2power(int i) {
 //******************************
 
 int dywapitchtracker::neededSampleCount(int minFreq) {
-	int nbSam = 3*44100/minFreq; // 1017. for 130 Hz
+	int nbSam = 3*_sampleRate/minFreq; // 1017. for 130 Hz
 	nbSam = _ceil_power2(nbSam); // 1024
 	return nbSam;
 }
@@ -167,7 +167,7 @@ double dywapitchtracker::computeWaveletPitch(const Sample * samples, int startsa
 	while (true) {
 		
 		// delta
-		delta = 44100./(_2power(curLevel)*maxF);
+		delta = double(_sampleRate)/(_2power(curLevel)*maxF);
 		//("dywapitch doing level=%ld delta=%ld\n", curLevel, delta);
 		
 		if (curSamNb < 2) goto cleanup;
@@ -443,7 +443,7 @@ double dywapitchtracker::dynamicProcess(double pitch) {
 // the API main entry points
 // ************************************
 
-double dywapitchtracker::computepitch(const Sample * samples, int startsample, int samplecount) {
+double dywapitchtracker::computePitch(const Sample * samples, int startsample, int samplecount, int samplerate) {
 	double raw_pitch = computeWaveletPitch(samples, startsample, samplecount);
 	return dynamicProcess(raw_pitch);
 }
